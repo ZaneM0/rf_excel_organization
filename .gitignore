@@ -1,0 +1,26 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+
+# macOS system files
+.DS_Store
+
+# PyCharm project settings
+.idea/
+
+# Log files
+*.log
+
+# Environment variable files (e.g., secrets, API keys)
+.env
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# VS Code workspace files (optional)
+.vscode/
+
