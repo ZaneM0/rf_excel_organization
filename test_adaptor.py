@@ -4,28 +4,103 @@ import glob
 import os
 import numpy as np
 
-df = pd.read_excel("../excel/adaptor/0.8-JJS.xlsx", header=0, engine='openpyxl')
-df.set_index(df.columns[0], inplace=True)
-row3 = df.iloc[1]
-#row3_value = row3.values
-# print(row3)
-# print("----------------------")
-# print(row3_value)
-# print(type(row3_value))
+def str_match(col: pd.Series, target_str: str)->pd.Series:
+    return col.str.contains(target_str,case=False,na=False, regex=False)
 
-def str_match(col: pd.Series)->pd.Series:
-    return col.str.contains('Configuration',case=False,na=False)
+def str_loc(file: str,df: pd.DataFrame, target_str: str):
+    mask = df.astype(str).apply(lambda col: str_match(col, target_str))
+    tar_rows_mask = mask.any(axis=1)
+    if not tar_rows_mask.any():
+        print(f'Unable to find <{target_str}> in <{file}>! :(')
+        tar_row_index = -1
+        tar_col_index = -1
+    else:
+        tar_row_index = tar_rows_mask[tar_rows_mask].index[0]
+        tar_cols_mask = mask.any(axis=0)
+        tar_col_index = tar_cols_mask[tar_cols_mask].index[0]
+    return tar_row_index, tar_col_index
+
+def get_value_same_row(file: str,df: pd.DataFrame, target_str: str):
+    tar_row_index, tar_col_index = str_loc(file, df, target_str)
+    if tar_row_index == -1 and tar_col_index == -1:
+        value = "N/A"
+    else:
+        non_null = df.loc[tar_row_index].dropna().values
+        if len(non_null) == 1:
+            #print(f'Unable to find the value of <{target_str}>  in the same row in <{file}>! :(')
+            value = "N/A"
+        else:
+            value = non_null[1]
+    return value
+
+def get_value_same_unit(file: str,df: pd.DataFrame, target_str: str):
+    tar_row_index, tar_col_index = str_loc(file,df, target_str)
+    if tar_row_index == -1 and tar_col_index == -1:
+        value = "N/A"
+    else:
+        tar_unit = df.loc[tar_row_index,tar_col_index]
+        value_start_tail = tar_unit.find(target_str) + len(target_str) + 1
+        value_start_head = tar_unit.find(target_str) - 1
+        if len(tar_unit) == len(target_str):
+            #print(f'Unable to find the value of <{target_str}> at the same unit in <{file}>! :(')
+            value = "N/A"
+        elif tar_unit[0] == target_str[0]:
+            value = tar_unit[value_start_tail:]
+        else:
+            value = tar_unit[:value_start_head]
+    return value
+
+def get_value(file: str,df: pd.DataFrame, target_str: str):
+    value = get_value_same_row(file,df, target_str)
+    if value == "N/A":
+        value = get_value_same_unit(file,df, target_str)
+    if value == "N/A":
+        print(f'Unable to find the value of <{target_str}> in <{file}>! :(>')
+    return value
+
+def get_product_name(file: str,df: pd.DataFrame):
+    name_row = df.iloc[1]
+    non_null = name_row.dropna().values
+    if not non_null[1]:
+        print(f'Unable to find product name in <{file}>! :(')
+        name = "N/A"
+    else:
+        product_name = non_null[1]
+    return product_name
+
+def extract_from_file(file:str, param_names: list[str]):
+    df = pd.read_excel(file, header=0, engine='openpyxl')
+    df.set_index(df.columns[0], inplace=True)
+    param_values = []
+    product_name = get_product_name(file,df)
+    for param_name in param_names:
+        param_values.append(get_value(file,df,param_name))
+
+    return product_name, param_values
 
 
-non_null = row3.dropna().values
-product_name = non_null[1]
+def main():
+    path = "../excel/adaptor"
+    files = glob.glob(os.path.join(path, '*.xlsx'))
+    param_names = ['Connector 1 Type', 'Connector 1 Impedance', 'Connector 1 Polarity',
+                   'Connector 2 Type', 'Connector 2 Impedance', 'Connector 2 Polarity',
+                   'Connector Mount Method', 'Adapter Body Style', 'Frequency', 'Insertion Loss (dB)',
+                   'VSWR /Return Loss', 'Center Contact', 'Outer Contact', 'Body', 'Dielectric',
+                   'Temperature Range', '2011/65/EU(RoHS)']
+    product_info_rows = []
+    for file in files:
+        product_name, param_values = extract_from_file(file, param_names)
+        product_info_rows.append([product_name] + param_values)
 
-mask = df.astype(str).apply(str_match)
-config_rows = mask.any(axis=1)
-print(config_rows)
-config_row = config_rows[config_rows].index[0]
-print(config_row)
+    result = pd.DataFrame(product_info_rows, columns=['Adaptor Name'] + param_names)
+    result.set_index('Adaptor Name', inplace=True)
+    for i in result.index:
+        insertion_loss = result["Insertion Loss (dB)"].at[i]
+        if 'sqt' in insertion_loss.lower():
+            result['Insertion Loss (dB)'].at[i] = '≤' + insertion_loss[2:]
 
+    result.to_excel('Adaptor_combined_result.xlsx', index=False, sheet_name='Adaptor')
+    print(f'combined_result.xlsx has been generated successfully，include {len(product_info_rows)} products.')
 
-#print(df[1])
-print("done!")
+if __name__ == '__main__':
+    main()
