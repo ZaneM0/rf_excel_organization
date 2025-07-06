@@ -22,17 +22,20 @@ def str_loc(file: str,df: pd.DataFrame, target_str: str):
 
 def get_value_same_row(file: str,df: pd.DataFrame, target_str: str):
     tar_row_index, tar_col_index = str_loc(file, df, target_str)
+    value = "N/A"
     if tar_row_index == -1 and tar_col_index == -1:
         value = "N/A"
     else:
-        non_null = df.loc[tar_row_index].dropna().values
-        if len(non_null) == 1:
-            #print(f'Unable to find the value of <{target_str}>  in the same row in <{file}>! :(')
-            value = "N/A"
-        elif len(non_null) == 2 and target_str in non_null[1]:
-            value = non_null[0]
-        else:
-            value = non_null[1]
+        for col in df.columns[tar_col_index + 1:]:
+            if not pd.isna(df.loc[tar_row_index, col]):
+                value = df.loc[tar_row_index, col]
+                break
+        if value == "N/A":
+            for col in df.columns[:tar_col_index - 1]:
+                if not pd.isna(df.loc[tar_row_index, col]):
+                    value = df.loc[tar_row_index, col]
+                    break
+
     return value
 
 def get_value_same_unit(file: str,df: pd.DataFrame, target_str: str):
@@ -101,7 +104,7 @@ def main():
         if 'sqt' in insertion_loss.lower():
             result['Insertion Loss (dB)'].at[i] = '≤' + insertion_loss[2:]
 
-    result.to_excel('Adaptor_combined_result.xlsx', index=True, sheet_name='Adaptor')
+    result.to_excel('../excel/Adaptor_combined_result.xlsx', index=True, sheet_name='Adaptor')
     print(f'combined_result.xlsx has been generated successfully，include {len(product_info_rows)} products.')
 
 if __name__ == '__main__':
