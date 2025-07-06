@@ -29,6 +29,8 @@ def get_value_same_row(file: str,df: pd.DataFrame, target_str: str):
         if len(non_null) == 1:
             #print(f'Unable to find the value of <{target_str}>  in the same row in <{file}>! :(')
             value = "N/A"
+        elif len(non_null) == 2 and target_str in non_null[1]:
+            value = non_null[0]
         else:
             value = non_null[1]
     return value
@@ -86,7 +88,7 @@ def main():
                    'Connector 2 Type', 'Connector 2 Impedance', 'Connector 2 Polarity',
                    'Connector Mount Method', 'Adapter Body Style', 'Frequency', 'Insertion Loss (dB)',
                    'VSWR /Return Loss', 'Center Contact', 'Outer Contact', 'Body', 'Dielectric',
-                   'Temperature Range', '2011/65/EU(RoHS)']
+                   'Temperature Range', 'Compliant']
     product_info_rows = []
     for file in files:
         product_name, param_values = extract_from_file(file, param_names)
@@ -99,7 +101,7 @@ def main():
         if 'sqt' in insertion_loss.lower():
             result['Insertion Loss (dB)'].at[i] = '≤' + insertion_loss[2:]
 
-    result.to_excel('Adaptor_combined_result.xlsx', index=False, sheet_name='Adaptor')
+    result.to_excel('Adaptor_combined_result.xlsx', index=True, sheet_name='Adaptor')
     print(f'combined_result.xlsx has been generated successfully，include {len(product_info_rows)} products.')
 
 if __name__ == '__main__':
