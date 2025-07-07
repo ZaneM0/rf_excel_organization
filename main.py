@@ -12,7 +12,7 @@ def extract_from_file(filepath):
     non_null = row3.dropna().values     # 丢掉空值
     if len(non_null) < 2:
         product_name = non_null[0] if len(non_null) == 1 else ''
-        # equivalent to a = (condition)? b : c in C language
+        # equivalent to a = (condition)? b : c in C langua
     else:
         product_name = non_null[1]      # 第二个非空
 

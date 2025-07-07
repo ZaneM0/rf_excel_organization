@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 def str_match(col: pd.Series, target_str: str)->pd.Series:
-    return col.str.contains(target_str,case=False,na=False, regex=False)
+    return col.str.contains(target_str,case=False,na=False, regex=True)
 
 def str_loc(file: str,df: pd.DataFrame, target_str: str):
     mask = df.astype(str).apply(lambda col: str_match(col, target_str))
@@ -31,7 +31,7 @@ def get_value_same_row(file: str,df: pd.DataFrame, target_str: str):
                 value = df.loc[tar_row_index, col]
                 break
         if value == "N/A":
-            for col in df.columns[:tar_col_index - 1]:
+            for col in df.columns[:tar_col_index]:
                 if not pd.isna(df.loc[tar_row_index, col]):
                     value = df.loc[tar_row_index, col]
                     break
@@ -84,28 +84,30 @@ def extract_from_file(file:str, param_names: list[str]):
     return product_name, param_values
 
 
-def main():
-    path = "../excel/adaptor"
+def extract_from_folder(path: str, param_names: list[str], param_match: list[str]):
+    # path = "../excel/adaptor"
     files = glob.glob(os.path.join(path, '*.xlsx'))
-    param_names = ['Connector 1 Type', 'Connector 1 Impedance', 'Connector 1 Polarity',
-                   'Connector 2 Type', 'Connector 2 Impedance', 'Connector 2 Polarity',
-                   'Connector Mount Method', 'Adapter Body Style', 'Frequency', 'Insertion Loss (dB)',
-                   'VSWR /Return Loss', 'Center Contact', 'Outer Contact', 'Body', 'Dielectric',
-                   'Temperature Range', 'Compliant']
+    # param_names = ['Connector 1 Type', 'Connector 1 Impedance', 'Connector 1 Polarity',
+    #                'Connector 2 Type', 'Connector 2 Impedance', 'Connector 2 Polarity',
+    #                'Connector Mount Method', 'Adapter Body Style', 'Frequency', 'Insertion Loss (dB)',
+    #                'VSWR /Return Loss', 'Center Contact', 'Outer Contact', 'Body', 'Dielectric',
+    #                'Temperature Range', 'Compliant']
     product_info_rows = []
     for file in files:
-        product_name, param_values = extract_from_file(file, param_names)
+        product_name, param_values = extract_from_file(file, param_match)
         product_info_rows.append([product_name] + param_values)
 
-    result = pd.DataFrame(product_info_rows, columns=['Adaptor Name'] + param_names)
-    result.set_index('Adaptor Name', inplace=True)
+    result = pd.DataFrame(product_info_rows, columns=['Product Name'] + param_names)
+    result.set_index('Product Name', inplace=True)
     for i in result.index:
         insertion_loss = result["Insertion Loss (dB)"].at[i]
         if 'sqt' in insertion_loss.lower():
             result['Insertion Loss (dB)'].at[i] = '≤' + insertion_loss[2:]
 
-    result.to_excel('../excel/Adaptor_combined_result.xlsx', index=True, sheet_name='Adaptor')
-    print(f'combined_result.xlsx has been generated successfully，include {len(product_info_rows)} products.')
+    return result
 
-if __name__ == '__main__':
-    main()
+# result.to_excel('../excel/Adaptor_combined_result.xlsx', index=True, sheet_name='Adaptor')
+# print(f'combined_result.xlsx has been generated successfully，include {len(product_info_rows)} products.')
+
+# if __name__ == '__main__':
+#     main()
