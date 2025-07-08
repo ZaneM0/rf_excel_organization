@@ -2,10 +2,17 @@ import pandas as pd
 import openpyxl
 import glob
 import os
+import re
 import numpy as np
 
 def str_match(col: pd.Series, target_str: str)->pd.Series:
     return col.str.contains(target_str,case=False,na=False, regex=True)
+
+def str_match_bool(df: pd.DataFrame, target_str: str):
+    mask = df.astype(str).apply(lambda col: str_match(col, target_str))
+    tar_row_mask = mask.any(axis=1)
+    find = tar_row_mask.any()
+    return find
 
 def str_loc(file: str,df: pd.DataFrame, target_str: str):
     mask = df.astype(str).apply(lambda col: str_match(col, target_str))
@@ -44,21 +51,22 @@ def get_value_same_unit(file: str,df: pd.DataFrame, target_str: str):
         value = "N/A"
     else:
         tar_unit = df.loc[tar_row_index,tar_col_index]
-        value_start_tail = tar_unit.find(target_str) + len(target_str) + 1
-        value_start_head = tar_unit.find(target_str) - 1
-        if len(tar_unit) == len(target_str):
-            #print(f'Unable to find the value of <{target_str}> at the same unit in <{file}>! :(')
-            value = "N/A"
-        elif tar_unit[0] == target_str[0]:
-            value = tar_unit[value_start_tail:]
-        else:
-            value = tar_unit[:value_start_head]
+        value = re.sub(target_str,'',tar_unit)
+        # value_start_tail = tar_unit.find(target_str) + len(target_str) + 1
+        # value_start_head = tar_unit.find(target_str) - 1
+        # if len(tar_unit) == len(target_str):
+        #     #print(f'Unable to find the value of <{target_str}> at the same unit in <{file}>! :(')
+        #     value = "N/A"
+        # elif tar_unit[0] == target_str[0]:
+        #     value = tar_unit[value_start_tail:]
+        # else:
+        #     value = tar_unit[:value_start_head]
     return value
 
 def get_value(file: str,df: pd.DataFrame, target_str: str):
-    value = get_value_same_row(file,df, target_str)
+    value = get_value_same_row(file, df, target_str)
     if value == "N/A":
-        value = get_value_same_unit(file,df, target_str)
+        value = get_value_same_unit(file, df, target_str)
     if value == "N/A":
         print(f'Unable to find the value of <{target_str}> in <{file}>! :(>')
     return value

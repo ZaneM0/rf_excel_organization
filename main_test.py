@@ -1,6 +1,10 @@
 import pandas as pd
-
-import excel_organization_func
+import pandas as pd
+import openpyxl
+import glob
+import os
+import numpy as np
+import excel_organization_func as ef
 
 adapter_path = "../excel/adapter"
 connector_path = "../excel/connector"
@@ -24,8 +28,8 @@ connector_param_match = [r'Connector\s*1\s*Type', r'Connector\s*1\s*Impedance', 
                     r'Insertion Loss \(dB\)',r'(?:VSWR\s*/\s*Return Loss)|(?:Return Loss\s*/\s*VSWR)', r'Cent(?:re|er) Contact',
                     r'Outer Contact', r'Body', r'Dielectric', r'Temperature Range', r'Compliant']
 
-adapter_result = excel_organization_func.extract_from_folder(adapter_path, adapter_param_names, adapter_param_match)
-connector_result = excel_organization_func.extract_from_folder(connector_path, connector_param_names, connector_param_match)
+adapter_result = ef.extract_from_folder(adapter_path, adapter_param_names, adapter_param_match)
+connector_result = ef.extract_from_folder(connector_path, connector_param_names, connector_param_match)
 with pd.ExcelWriter('../excel/Combined_result.xlsx', engine='openpyxl') as writer:
     adapter_result.to_excel(writer, index=True, sheet_name='Adapter')
     connector_result.to_excel(writer, index=True, sheet_name='Connector')
