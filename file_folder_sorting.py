@@ -8,7 +8,7 @@ import re
 import excel_organization_func as ef
 from excel_organization_func import get_product_name
 
-categories = ['connector','adapter','cable assembly', 'unsorted']
+categories = ['connector','adapter','cable assembly','load','unsorted']
 for cat in categories:
     os.makedirs(f'../excel/{cat}', exist_ok=True)
 copied = {cat: set() for cat in categories}
@@ -33,7 +33,8 @@ for file in files:
                 shutil.copy(file, dst_path)
                 copied['connector'].add(get_product_name(file, df))
             break
-        elif ef.str_match_bool(df,r'\s*adapt(?:er|or)\s*datasheet'):
+        elif (ef.str_match_bool(df,r'\s*adapt(?:er|or)\s*datasheet') and not
+        ef.str_match_bool(df,r'\s*waveguide')):
             assigned = True
             if get_product_name(file,df) not in copied['adapter']:
                 dst_folder = '../excel/adapter'
@@ -48,6 +49,14 @@ for file in files:
                 dst_path = os.path.join(dst_folder, file_name)
                 shutil.copy(file, dst_path)
                 copied['cable assembly'].add(get_product_name(file,df))
+            break
+        elif ef.str_match_bool(df, r'\s*load\s*datasheet'):
+            assigned = True
+            if get_product_name(file, df) not in copied['load']:
+                dst_folder = '../excel/load'
+                dst_path = os.path.join(dst_folder, file_name)
+                shutil.copy(file, dst_path)
+                copied['load'].add(get_product_name(file, df))
             break
         else:
             continue

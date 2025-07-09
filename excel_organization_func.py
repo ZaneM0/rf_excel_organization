@@ -14,7 +14,7 @@ def str_match_bool(df: pd.DataFrame, target_str: str):
     find = tar_row_mask.any()
     return find
 
-def str_loc(file: str,df: pd.DataFrame, target_str: str):
+def str_loc(file: str,df: pd.DataFrame, target_str: str, tar_index: int):
     mask = df.astype(str).apply(lambda col: str_match(col, target_str))
     tar_rows_mask = mask.any(axis=1)
     if not tar_rows_mask.any():
@@ -22,13 +22,17 @@ def str_loc(file: str,df: pd.DataFrame, target_str: str):
         tar_row_index = -1
         tar_col_index = -1
     else:
-        tar_row_index = tar_rows_mask[tar_rows_mask].index[0]
-        tar_cols_mask = mask.any(axis=0)
-        tar_col_index = tar_cols_mask[tar_cols_mask].index[0]
+        if tar_index < len(tar_rows_mask[tar_rows_mask].index):
+            tar_row_index = tar_rows_mask[tar_rows_mask].index[tar_index]
+            tar_cols_mask = mask.any(axis=0)
+            tar_col_index = tar_cols_mask[tar_cols_mask].index[0]
+        else:
+            tar_row_index = -1
+            tar_col_index = -1
     return tar_row_index, tar_col_index
 
-def get_value_same_row(file: str,df: pd.DataFrame, target_str: str):
-    tar_row_index, tar_col_index = str_loc(file, df, target_str)
+def get_value_same_row(file: str,df: pd.DataFrame, target_str: str, tar_index: int):
+    tar_row_index, tar_col_index = str_loc(file, df, target_str, tar_index)
     value = "N/A"
     if tar_row_index == -1 and tar_col_index == -1:
         value = "N/A"
@@ -45,13 +49,15 @@ def get_value_same_row(file: str,df: pd.DataFrame, target_str: str):
 
     return value
 
-def get_value_same_unit(file: str,df: pd.DataFrame, target_str: str):
-    tar_row_index, tar_col_index = str_loc(file,df, target_str)
+def get_value_same_unit(file: str,df: pd.DataFrame, target_str: str, tar_index: int):
+    tar_row_index, tar_col_index = str_loc(file,df, target_str, tar_index)
     if tar_row_index == -1 and tar_col_index == -1:
         value = "N/A"
     else:
         tar_unit = df.loc[tar_row_index,tar_col_index]
         value = re.sub(target_str,'',tar_unit)
+        if value == '':
+            value = "N/A"
         # value_start_tail = tar_unit.find(target_str) + len(target_str) + 1
         # value_start_head = tar_unit.find(target_str) - 1
         # if len(tar_unit) == len(target_str):
@@ -63,10 +69,10 @@ def get_value_same_unit(file: str,df: pd.DataFrame, target_str: str):
         #     value = tar_unit[:value_start_head]
     return value
 
-def get_value(file: str,df: pd.DataFrame, target_str: str):
-    value = get_value_same_row(file, df, target_str)
+def get_value(file: str,df: pd.DataFrame, target_str: str, tar_index: int):
+    value = get_value_same_row(file, df, target_str, tar_index)
     if value == "N/A":
-        value = get_value_same_unit(file, df, target_str)
+        value = get_value_same_unit(file, df, target_str, tar_index)
     if value == "N/A":
         print(f'Unable to find the value of <{target_str}> in <{file}>! :(>')
     return value
@@ -84,10 +90,12 @@ def get_product_name(file: str,df: pd.DataFrame):
 def extract_from_file(file:str, param_names: list[str]):
     df = pd.read_excel(file, header=0, engine='openpyxl')
     df.set_index(df.columns[0], inplace=True)
+    param_counter = {name: 0 for name in param_names}
     param_values = []
     product_name = get_product_name(file,df)
     for param_name in param_names:
-        param_values.append(get_value(file,df,param_name))
+        param_values.append(get_value(file, df, param_name, param_counter[param_name]))
+        param_counter[param_name] += 1
 
     return product_name, param_values
 
@@ -107,10 +115,10 @@ def extract_from_folder(path: str, param_names: list[str], param_match: list[str
 
     result = pd.DataFrame(product_info_rows, columns=['Product Name'] + param_names)
     result.set_index('Product Name', inplace=True)
-    for i in result.index:
-        insertion_loss = result["Insertion Loss (dB)"].at[i]
-        if 'sqt' in insertion_loss.lower():
-            result['Insertion Loss (dB)'].at[i] = '≤' + insertion_loss[2:]
+    # for i in result.index:
+    #     insertion_loss = result["Insertion Loss (dB)"].at[i]
+    #     if 'sqt' in insertion_loss.lower():
+    #         result['Insertion Loss (dB)'].at[i] = '≤' + insertion_loss[2:]
 
     return result
 
