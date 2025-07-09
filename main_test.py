@@ -49,6 +49,7 @@ adapter_result = ef.extract_from_folder(adapter_path, adapter_param_names, adapt
 connector_result = ef.extract_from_folder(connector_path, connector_param_names, connector_param_match)
 cab_assem_result = ef.extract_from_folder(cab_assem_path, cab_assem_param_names, cab_assem_param_match)
 load_result = ef.extract_from_folder(load_path, load_param_names, load_param_match)
+
 with pd.ExcelWriter('../excel/Combined_result.xlsx', engine='openpyxl') as writer:
     adapter_result.to_excel(writer, index=True, sheet_name='Adapter')
     connector_result.to_excel(writer, index=True, sheet_name='Connector')
