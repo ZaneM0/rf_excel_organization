@@ -89,20 +89,20 @@ def get_product_name(file: str,df: pd.DataFrame):
         product_name = non_null[1]
     return product_name
 
-def extract_from_file(file:str, param_names: list[str]):
+def extract_from_file(file:str, parameters_dict: dict):
     df = pd.read_excel(file, header=0, engine='openpyxl')
     df.set_index(df.columns[0], inplace=True)
-    param_counter = {name: 0 for name in param_names}
+    param_counter = {param_name_regx: 0 for param_name_regx in parameters_dict.values()}
     param_values = []
     product_name = get_product_name(file,df)
-    for param_name in param_names:
-        param_values.append(get_value(file, df, param_name, param_counter[param_name]))
-        param_counter[param_name] += 1
+    for param_name_regx in parameters_dict.values():
+        param_values.append(get_value(file, df, param_name_regx, param_counter[param_name_regx]))
+        param_counter[param_name_regx] += 1
 
     return product_name, param_values
 
 
-def extract_from_folder(path: str, param_names: list[str], param_match: list[str]):
+def extract_from_folder(path: str, parameters_dict: dict):
     # path = "../excel/adaptor"
     files = glob.glob(os.path.join(path, '*.xlsx'))
     # param_names = ['Connector 1 Type', 'Connector 1 Impedance', 'Connector 1 Polarity',
@@ -111,8 +111,9 @@ def extract_from_folder(path: str, param_names: list[str], param_match: list[str
     #                'VSWR /Return Loss', 'Center Contact', 'Outer Contact', 'Body', 'Dielectric',
     #                'Temperature Range', 'Compliant']
     product_info_rows = []
+    param_names = list(parameters_dict.keys())
     for file in files:
-        product_name, param_values = extract_from_file(file, param_match)
+        product_name, param_values = extract_from_file(file, parameters_dict)
         product_info_rows.append([product_name] + param_values)
 
     result = pd.DataFrame(product_info_rows, columns=['Product Name'] + param_names)
