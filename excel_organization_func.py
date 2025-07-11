@@ -24,7 +24,9 @@ def str_loc(file: str,df: pd.DataFrame, target_str: str, tar_index: int):
     else:
         if tar_index < len(tar_rows_mask[tar_rows_mask].index):
             tar_row_index = tar_rows_mask[tar_rows_mask].index[tar_index]
-            tar_cols_mask = mask.any(axis=0)
+            # tar_cols_mask = mask.any(axis=0)
+            # tar_col_index = tar_cols_mask[tar_cols_mask].index[0]
+            tar_cols_mask = mask.loc[tar_row_index,]
             tar_col_index = tar_cols_mask[tar_cols_mask].index[0]
         else:
             tar_row_index = -1
