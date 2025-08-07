@@ -33,50 +33,63 @@ def str_loc(file: str,df: pd.DataFrame, target_str: str, tar_index: int):
             tar_col_index = -1
     return tar_row_index, tar_col_index
 
-def get_value_same_row(file: str,df: pd.DataFrame, target_str: str, tar_index: int):
+# def get_value_same_row(file: str,df: pd.DataFrame, target_str: str, tar_index: int):
+#     tar_row_index, tar_col_index = str_loc(file, df, target_str, tar_index)
+#     value = "N/A"
+#     if tar_row_index == -1 and tar_col_index == -1:
+#         value = "N/A"
+#     else:
+#         for col in df.columns[tar_col_index + 1:]:
+#             if not pd.isna(df.loc[tar_row_index, col]):
+#                 value = df.loc[tar_row_index, col].strip()
+#                 break
+#         if value == "N/A":
+#             for col in df.columns[:tar_col_index]:
+#                 if not pd.isna(df.loc[tar_row_index, col]):
+#                     value = df.loc[tar_row_index, col].strip()
+#                     break
+#
+#     return value
+#
+# def get_value_same_unit(file: str,df: pd.DataFrame, target_str: str, tar_index: int):
+#     tar_row_index, tar_col_index = str_loc(file,df, target_str, tar_index)
+#     if tar_row_index == -1 and tar_col_index == -1:
+#         value = "N/A"
+#     else:
+#         tar_unit = df.loc[tar_row_index,tar_col_index]
+#         value = re.sub(target_str,'',tar_unit)
+#         if value == '':
+#             value = "N/A"
+#
+#     return value
+
+def get_value(file: str,df: pd.DataFrame, target_str: str, tar_index: int):
+    # value = get_value_same_row(file, df, target_str, tar_index)
+    # if value == "N/A":
+    #     value = get_value_same_unit(file, df, target_str, tar_index)
+    # if value == "N/A":
+    #     print(f'Unable to find the value of <{target_str}> in <{file}>! :(>')
     tar_row_index, tar_col_index = str_loc(file, df, target_str, tar_index)
-    value = "N/A"
     if tar_row_index == -1 and tar_col_index == -1:
         value = "N/A"
     else:
+        value = "N/A"
         for col in df.columns[tar_col_index + 1:]:
             if not pd.isna(df.loc[tar_row_index, col]):
-                value = df.loc[tar_row_index, col]
+                value = df.loc[tar_row_index, col].strip()
                 break
+        if value == "N/A":
+            tar_unit = df.loc[tar_row_index, tar_col_index]
+            value = re.sub(target_str, '', tar_unit).strip()
+            if value == '':
+                value = "N/A"
         if value == "N/A":
             for col in df.columns[:tar_col_index]:
                 if not pd.isna(df.loc[tar_row_index, col]):
-                    value = df.loc[tar_row_index, col]
+                    value = df.loc[tar_row_index, col].strip()
                     break
-
-    return value
-
-def get_value_same_unit(file: str,df: pd.DataFrame, target_str: str, tar_index: int):
-    tar_row_index, tar_col_index = str_loc(file,df, target_str, tar_index)
-    if tar_row_index == -1 and tar_col_index == -1:
-        value = "N/A"
-    else:
-        tar_unit = df.loc[tar_row_index,tar_col_index]
-        value = re.sub(target_str,'',tar_unit)
-        if value == '':
-            value = "N/A"
-        # value_start_tail = tar_unit.find(target_str) + len(target_str) + 1
-        # value_start_head = tar_unit.find(target_str) - 1
-        # if len(tar_unit) == len(target_str):
-        #     #print(f'Unable to find the value of <{target_str}> at the same unit in <{file}>! :(')
-        #     value = "N/A"
-        # elif tar_unit[0] == target_str[0]:
-        #     value = tar_unit[value_start_tail:]
-        # else:
-        #     value = tar_unit[:value_start_head]
-    return value
-
-def get_value(file: str,df: pd.DataFrame, target_str: str, tar_index: int):
-    value = get_value_same_row(file, df, target_str, tar_index)
-    if value == "N/A":
-        value = get_value_same_unit(file, df, target_str, tar_index)
-    if value == "N/A":
-        print(f'Unable to find the value of <{target_str}> in <{file}>! :(>')
+        if value == "N/A":
+            print(f'Unable to find the value of <{target_str}> in <{file}>! :(')
     return value
 
 def get_product_name(file: str,df: pd.DataFrame):
@@ -105,11 +118,7 @@ def extract_from_file(file:str, parameters_dict: dict):
 def extract_from_folder(path: str, parameters_dict: dict):
     # path = "../excel/adaptor"
     files = glob.glob(os.path.join(path, '*.xlsx'))
-    # param_names = ['Connector 1 Type', 'Connector 1 Impedance', 'Connector 1 Polarity',
-    #                'Connector 2 Type', 'Connector 2 Impedance', 'Connector 2 Polarity',
-    #                'Connector Mount Method', 'Adapter Body Style', 'Frequency', 'Insertion Loss (dB)',
-    #                'VSWR /Return Loss', 'Center Contact', 'Outer Contact', 'Body', 'Dielectric',
-    #                'Temperature Range', 'Compliant']
+
     product_info_rows = []
     param_names = list(parameters_dict.keys())
     for file in files:
@@ -124,6 +133,17 @@ def extract_from_folder(path: str, parameters_dict: dict):
     #         result['Insertion Loss (dB)'].at[i] = '≤' + insertion_loss[2:]
 
     return result
+
+def replace_first_char_if_not_digit (df: pd.DataFrame, param_name_ls: list) -> pd.DataFrame:
+    for param_name in param_name_ls:
+        for i in df.index:
+            param_value = df[param_name].at[i].strip()
+            if not param_value or param_value == 'N/A':
+                df[param_name].at[i] = 'N/A'
+            elif not param_value[0].isdigit():
+                df[param_name].at[i] = '≤' + param_value[1:]
+    return df
+
 
 # result.to_excel('../excel/Adaptor_combined_result.xlsx', index=True, sheet_name='Adaptor')
 # print(f'combined_result.xlsx has been generated successfully，include {len(product_info_rows)} products.')

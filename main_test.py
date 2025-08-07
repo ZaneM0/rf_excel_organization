@@ -52,15 +52,19 @@ load_param_dict = {'Connector 1 Type': r'Connector\s*1?\s*Type', 'Connector 1 Im
                 'Power': r'Power','Center Contact': r'Cent(?:re|er)\s*Contact','Outer Contact': r'Outer\s*Contact',
                 'Body': r'Body','Dielectric': r'Dielectric','Temperature Range': r'Temperature\s*Range',
                 'Compliant': r'Compliant'}
+def main():
+    adapter_df = ef.extract_from_folder(adapter_path, adapter_param_dict)
+    adapter_result = ef.replace_first_char_if_not_digit(adapter_df,['Insertion Loss (dB)','VSWR /Return Loss'])
+    connector_result = ef.extract_from_folder(connector_path, connector_param_dict)
+    cab_assem_result = ef.extract_from_folder(cab_assem_path, cab_assem_param_dict)
+    load_result = ef.extract_from_folder(load_path, load_param_dict)
 
-adapter_result = ef.extract_from_folder(adapter_path, adapter_param_dict)
-connector_result = ef.extract_from_folder(connector_path, connector_param_dict)
-cab_assem_result = ef.extract_from_folder(cab_assem_path, cab_assem_param_dict)
-load_result = ef.extract_from_folder(load_path, load_param_dict)
+    with pd.ExcelWriter('../excel/Combined_result.xlsx', engine='openpyxl') as writer:
+        adapter_result.to_excel(writer, index=True, sheet_name='Adapter')
+        connector_result.to_excel(writer, index=True, sheet_name='Connector')
+        cab_assem_result.to_excel(writer, index=True, sheet_name='Cable Assembly')
+        load_result.to_excel(writer, index=True, sheet_name='Load')
+    print(f'combined_result.xlsx has been generated successfully!')
 
-with pd.ExcelWriter('../excel/Combined_result.xlsx', engine='openpyxl') as writer:
-    adapter_result.to_excel(writer, index=True, sheet_name='Adapter')
-    connector_result.to_excel(writer, index=True, sheet_name='Connector')
-    cab_assem_result.to_excel(writer, index=True, sheet_name='Cable Assembly')
-    load_result.to_excel(writer, index=True, sheet_name='Load')
-# print(f'combined_result.xlsx has been generated successfully，include {len(product_info_rows)} products.')
+if __name__ == '__main__':
+    main()
