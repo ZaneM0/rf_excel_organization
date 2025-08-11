@@ -9,7 +9,14 @@ adapter_path = "../excel/adapter"
 connector_path = "../excel/connector"
 cab_assem_path = "../excel/cable assembly"
 load_path = "../excel/load"
+already_documented_products_path = "../excel/already_documented_products.csv"
 
+documented_set = set()
+documented_products_df = pd.read_csv(already_documented_products_path,header=0)
+identifier_col = documented_products_df['Identifier']
+for identifier in identifier_col:
+    if identifier not in documented_set:
+        documented_set.add(identifier)
 
 adapter_param_dict = {'Connector 1 Type': r'Connector\s*1\s*Type', 'Connector 1 Impedance': r'Connector\s*1\s*Impedance',
                    'Connector 1 Polarity': r'Connector\s*1\s*Polarity','Connector 2 Type': r'Connector\s*2\s*Type',
@@ -18,7 +25,7 @@ adapter_param_dict = {'Connector 1 Type': r'Connector\s*1\s*Type', 'Connector 1 
                    'Frequency': r'Frequency', 'Insertion Loss (dB)': r'Insertion\s*Loss\s*\(dB\)',
                    'VSWR /Return Loss': r'(?:VSWR\s*/\s*Return\s*Loss)|(?:Return\s*Loss\s*/\s*VSWR)',
                    'Center Contact': r'Cent(?:er|re)\s*Contact', 'Outer Contact': r'Outer\s*Contact',
-                   'Body': r'Body', 'Dielectric': r'Dielectric','Temperature Range': r'Temperature\s*Range',
+                   'Body': r'^Body', 'Dielectric': r'Dielectric','Temperature Range': r'Temperature\s*Range',
                    'Compliant': r'Compliant'}
 
 connector_param_dict = {'Connector 1 Type': r'Connector\s*1?\s*Type', 'Connector 1 Impedance': r'Connector\s*1?\s*Impedance',
@@ -53,11 +60,11 @@ load_param_dict = {'Connector 1 Type': r'Connector\s*1?\s*Type', 'Connector 1 Im
                 'Body': r'Body','Dielectric': r'Dielectric','Temperature Range': r'Temperature\s*Range',
                 'Compliant': r'Compliant'}
 def main():
-    adapter_df = ef.extract_from_folder(adapter_path, adapter_param_dict)
+    adapter_df = ef.extract_from_folder(adapter_path, adapter_param_dict,documented_set)
     adapter_result = ef.replace_first_char_if_not_digit(adapter_df,['Insertion Loss (dB)','VSWR /Return Loss'])
-    connector_result = ef.extract_from_folder(connector_path, connector_param_dict)
-    cab_assem_result = ef.extract_from_folder(cab_assem_path, cab_assem_param_dict)
-    load_result = ef.extract_from_folder(load_path, load_param_dict)
+    connector_result = ef.extract_from_folder(connector_path, connector_param_dict,documented_set)
+    cab_assem_result = ef.extract_from_folder(cab_assem_path, cab_assem_param_dict, documented_set)
+    load_result = ef.extract_from_folder(load_path, load_param_dict, documented_set)
 
     with pd.ExcelWriter('../excel/Combined_result.xlsx', engine='openpyxl') as writer:
         adapter_result.to_excel(writer, index=True, sheet_name='Adapter')
@@ -68,3 +75,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+

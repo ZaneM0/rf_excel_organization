@@ -115,7 +115,7 @@ def extract_from_file(file:str, parameters_dict: dict):
     return product_name, param_values
 
 
-def extract_from_folder(path: str, parameters_dict: dict):
+def extract_from_folder(path: str, parameters_dict: dict, documented_set: set):
     # path = "../excel/adaptor"
     files = glob.glob(os.path.join(path, '*.xlsx'))
 
@@ -123,14 +123,15 @@ def extract_from_folder(path: str, parameters_dict: dict):
     param_names = list(parameters_dict.keys())
     for file in files:
         product_name, param_values = extract_from_file(file, parameters_dict)
-        product_info_rows.append([product_name] + param_values)
+        if product_name not in documented_set:
+            product_info_rows.append([product_name] + param_values)
 
     result = pd.DataFrame(product_info_rows, columns=['Product Name'] + param_names)
     result.set_index('Product Name', inplace=True)
-    # for i in result.index:
-    #     insertion_loss = result["Insertion Loss (dB)"].at[i]
+    # for row_index in result.index:
+    #     insertion_loss = result["Insertion Loss (dB)"].at[row_index]
     #     if 'sqt' in insertion_loss.lower():
-    #         result['Insertion Loss (dB)'].at[i] = '≤' + insertion_loss[2:]
+    #         result['Insertion Loss (dB)'].at[row_index] = '≤' + insertion_loss[2:]
 
     return result
 
