@@ -1,5 +1,6 @@
 import pandas as pd
 import openpyxl
+import re
 import glob
 import os
 import numpy as np
@@ -18,12 +19,12 @@ for identifier in identifier_col:
     if identifier not in documented_set:
         documented_set.add(identifier)
 
-adapter_param_dict = {'Connector 1 Type': r'Connector\s*1\s*Type', 'Connector 1 Impedance': r'Connector\s*1\s*Impedance',
-                   'Connector 1 Polarity': r'Connector\s*1\s*Polarity','Connector 2 Type': r'Connector\s*2\s*Type',
+adapter_param_dict = {'Connector 1 Type': r'Type', 'Connector 1 Impedance': r'Connector\s*1\s*Impedance',
+                   'Connector 1 Polarity': r'Connector\s*1\s*Polarity','Connector 2 Type': r'Type',
                    'Connector 2 Impedance': r'Connector\s*2\s*Impedance', 'Connector 2 Polarity':  r'Connector\s*2\s*Polarity',
                    'Connector Mount Method': r'Connector\s*Mount\s*Method', 'Adapter Body Style': r'Adapter\s*Body\s*Style',
                    'Frequency': r'Frequency', 'Insertion Loss (dB)': r'Insertion\s*Loss\s*\(dB\)',
-                   'VSWR /Return Loss': r'(?:VSWR\s*/\s*Return\s*Loss)|(?:Return\s*Loss\s*/\s*VSWR)',
+                   'VSWR /Return Loss': r'(?:VSWR\s*/\s*Return\s*Loss)|(?:Return\s*Loss\s*/\s*VSWR)|(?:Return\s*Loss)|(?:VSWR)',
                    'Center Contact': r'Cent(?:er|re)\s*Contact', 'Outer Contact': r'Outer\s*Contact',
                    'Body': r'^Body', 'Dielectric': r'Dielectric','Temperature Range': r'Temperature\s*Range',
                    'Compliant': r'Compliant'}
@@ -62,8 +63,19 @@ load_param_dict = {'Connector 1 Type': r'Connector\s*1?\s*Type', 'Connector 1 Im
 def main():
     adapter_df = ef.extract_from_folder(adapter_path, adapter_param_dict,documented_set)
     adapter_result = ef.replace_first_char_if_not_digit(adapter_df,['Insertion Loss (dB)','VSWR /Return Loss'])
-    connector_result = ef.extract_from_folder(connector_path, connector_param_dict,documented_set)
+
+    connector_df = ef.extract_from_folder(connector_path, connector_param_dict,documented_set)
+    connector_result = ef.replace_first_char_if_not_digit(connector_df, ['Insertion Loss (dB)','VSWR /Return Loss'])
+
     cab_assem_result = ef.extract_from_folder(cab_assem_path, cab_assem_param_dict, documented_set)
+    cab_assem_result['Impedance'] = (
+        cab_assem_result['Impedance']
+        .fillna('')
+        .astype(str)
+        .str.strip()
+        .apply(lambda x: re.search(r'\d{2}', x).group(0) if x != 'N/A' and re.search(r'\d{2}', x) else 'N/A')
+    )
+
     load_result = ef.extract_from_folder(load_path, load_param_dict, documented_set)
 
     with pd.ExcelWriter('../excel/Combined_result.xlsx', engine='openpyxl') as writer:

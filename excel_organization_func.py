@@ -8,7 +8,7 @@ import numpy as np
 def str_match(col: pd.Series, target_str: str)->pd.Series:
     return col.str.contains(target_str,case=False,na=False, regex=True)
 
-def str_match_bool(df: pd.DataFrame, target_str: str):
+def str_match_bool(df: pd.DataFrame, target_str: str) -> bool:
     mask = df.astype(str).apply(lambda col: str_match(col, target_str))
     tar_row_mask = mask.any(axis=1)
     find = tar_row_mask.any()
@@ -80,7 +80,7 @@ def get_value(file: str,df: pd.DataFrame, target_str: str, tar_index: int):
                 break
         if value == "N/A":
             tar_unit = df.loc[tar_row_index, tar_col_index]
-            value = re.sub(target_str, '', tar_unit).strip()
+            value = re.sub(target_str, '', tar_unit, flags=re.IGNORECASE).strip()
             if value == '':
                 value = "N/A"
         if value == "N/A":
@@ -97,7 +97,7 @@ def get_product_name(file: str,df: pd.DataFrame):
     non_null = name_row.dropna().values
     if not non_null[1]:
         print(f'Unable to find product name in <{file}>! :(')
-        name = "N/A"
+        product_name = "N/A"
     else:
         product_name = non_null[1]
     return product_name
@@ -141,9 +141,12 @@ def replace_first_char_if_not_digit (df: pd.DataFrame, param_name_ls: list) -> p
             param_value = df[param_name].at[i].strip()
             if not param_value or param_value == 'N/A':
                 df[param_name].at[i] = 'N/A'
+            elif len(param_value) == 1:
+                continue
             elif not param_value[0].isdigit():
                 df[param_name].at[i] = '≤' + param_value[1:]
     return df
+
 
 
 # result.to_excel('../excel/Adaptor_combined_result.xlsx', index=True, sheet_name='Adaptor')

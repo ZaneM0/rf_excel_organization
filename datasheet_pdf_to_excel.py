@@ -11,12 +11,12 @@ import ctypes
 import excel_organization_func as ef
 
 
-tables = camelot.read_pdf('../../datasheets/2.92-1.0-KJS-9.pdf', pages='all')
+tables = camelot.read_pdf('../../datasheets/BNC-SMB-KYK.pdf', pages='all')
 # print(tables)
 # print(tables[0].df)
 output_excel = tables[0].df
 output_df = pd.DataFrame(output_excel)
-output_df.to_excel('../../datasheets/2.92-1.0-KJS-9.xlsx')
+output_df.to_excel('../../datasheets/BNC-SMB-KYK.xlsx')
 
 print('done')
 
